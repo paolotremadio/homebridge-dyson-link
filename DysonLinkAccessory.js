@@ -273,7 +273,7 @@ class DysonLinkAccessory {
         // Add climate control
         if (this.device.isClimateControlSupported()) {
             this.log.info("Climate control button is added");
-            this.climateControlSwitch = this.getServiceBySubtype(Service.Switch, "Climate Control", "Climate Control");
+            this.climateControlSwitch = this.getServiceBySubtype(Service.Switch, "Climate Control - " + this.displayName, "Climate Control");
 
             this.climateControlSwitch
               .getCharacteristic(Characteristic.On)
