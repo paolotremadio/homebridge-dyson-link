@@ -79,7 +79,7 @@ class DysonPlatform {
                                 return;
                             }
                             platform.log(accessory.displayName + " IP:" + accessory.ip + " Serial Number:" + accessory.serialNumber);
-                            let device = new DysonLinkDevice(accessory.displayName, accessory.ip, accessory.serialNumber, password, platform.log);
+                            let device = new DysonLinkDevice(accessory.displayName, accessory.ip, accessory.serialNumber, password, accessory.climateControl, platform.log);
                             if (device.valid) {
                                 platform.log("Device serial number format valids");
                                 let uuid = UUIDGen.generate(accessory.serialNumber);

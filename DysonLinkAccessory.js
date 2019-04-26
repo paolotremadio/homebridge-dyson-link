@@ -269,6 +269,23 @@ class DysonLinkAccessory {
                 }
             }
         }
+
+        // Add climate control
+        if (this.device.isClimateControlSupported()) {
+            this.log.info("Climate control button is added");
+            this.climateControlSwitch = this.getServiceBySubtype(Service.Switch, "Climate Control", "Climate Control");
+
+            this.climateControlSwitch
+              .getCharacteristic(Characteristic.On)
+              .on("get", this.device.isClimateControlEnabled.bind(this.device))
+              .on("set", this.device.setClimateControl.bind(this.device));
+        } else {
+            this.log.info("Climate control button is hidden");
+            let climateControlSwitch = this.accessory.getServiceByUUIDAndSubType(Service.Switch, "Climate Control");
+            if (climateControlSwitch) {
+                this.accessory.removeService(climateControlSwitch);
+            }
+        }
     }
 
     getService(serviceType) {

@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const EventEmitter = require("events").EventEmitter;
 const DysonFanState = require("./DysonFanState").DysonFanState;
 const DysonEnvironmentState = require("./DysonEnvironmentState").DysonEnvironmentState;
+const DysonClimateControl = require('./DysonClimateControl').DysonClimateControl;
 
 
 
@@ -12,7 +13,7 @@ class DysonLinkDevice {
     static get SENSOR_EVENT() { return "sensor-updated"; }
     static get STATE_EVENT() { return "state-updated"; }
 
-    constructor(displayName, ip, serialNumber, password, log) {
+    constructor(displayName, ip, serialNumber, password, climateControl, log) {
         this.log = log;
         this.serialNumber = serialNumber;
         this.displayName = displayName;
@@ -54,9 +55,14 @@ class DysonLinkDevice {
             this.fanState = new DysonFanState(this.heatAvailable, this.Is2018Dyson);
             this.environment = new DysonEnvironmentState();
 
+            if (climateControl) {
+                this.climateControl = new DysonClimateControl(climateControl, this, this.displayName, this.log);
+            }
+
             this.mqttClient.on('connect', () => {
                 this.log.info("Connected to " + this._id + ". subscribe now");
                 this.mqttClient.subscribe(this.statusSubscribeTopic);
+                this.requestForCurrentUpdate();
             });
 
             this.mqttClient.on('message', (topic, message) => {
@@ -67,6 +73,9 @@ class DysonLinkDevice {
                         this.log.info("Update sensor data from ENVIRONMENTAL-CURRENT-SENSOR-DATA - " + this.displayName);
                         this.environment.updateState(result);
                         this.environmentEvent.emit(this.SENSOR_EVENT);
+                        if (this.climateControl) {
+                            this.climateControl.environmentUpdate(this.environment);
+                        }
                         break;
                     case "CURRENT-STATE":
                         this.log.info("Update fan data from CURRENT-STATE - " + this.displayName);
@@ -79,10 +88,32 @@ class DysonLinkDevice {
                         break;
                 }
             });
+
+            setInterval(() => { // Update the sensors every 30 minutes
+                this.log.debug("Fetching new sensors data");
+                this.requestForCurrentUpdate();
+            }, 1800000);
         }
     }
 
+    isClimateControlSupported() {
+        return !!this.climateControl;
+    }
 
+    isClimateControlEnabled(callback) {
+        callback(null, this.climateControl.isEnabled());
+    }
+
+    setClimateControl(value, callback) {
+        this.log.debug(this.displayName + " - Set Climate control: " + value);
+        if (value == 1) {
+            this.climateControl.enable();
+        } else {
+            this.climateControl.disable();
+        }
+        this.requestForCurrentUpdate();
+        this.isClimateControlEnabled(callback);
+    }
 
     requestForCurrentUpdate() {
         // Only do this when we have less than one listener to avoid multiple call
