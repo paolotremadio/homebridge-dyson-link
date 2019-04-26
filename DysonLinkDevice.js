@@ -89,10 +89,10 @@ class DysonLinkDevice {
                 }
             });
 
-            setInterval(() => { // Update the sensors every 30 minutes
+            setInterval(() => { // Update the sensors every 10 minutes
                 this.log.debug("Fetching new sensors data");
                 this.requestForCurrentUpdate();
-            }, 1800000);
+            }, 600000);
         }
     }
 
